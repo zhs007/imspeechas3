@@ -281,6 +281,9 @@ package nslm2.nets.imsdk
 				_buffAMR = Codec.encode(_recording_data);
 				
 				postAMR();
+				
+				var bufWav:ByteArray = Codec.decode(_buffAMR);
+				_recording_data = bufWav;
 			}
 			
 			chgState(STATE_STOPRECORDING);
@@ -294,7 +297,7 @@ package nslm2.nets.imsdk
 		public function getWAVData():ByteArray
 		{
 			//_record.getWAV();
-			var buf:ByteArray = procWav(_recording_data, 2, 44100);
+			var buf:ByteArray = procWav(_recording_data, 1, 8000);
 			return buf;
 		}
 		
