@@ -466,7 +466,7 @@
 //			mp3Encoder.start();
 			
 			var data_save:FileReference = new FileReference();
-			data_save.save(wavbuf, "data.wav");
+			data_save.save(wavbuf, "data8.wav");
 		}
 		
 		private function mp3EncodeProgress(event : ProgressEvent) : void {

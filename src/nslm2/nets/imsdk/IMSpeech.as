@@ -70,6 +70,8 @@ package nslm2.nets.imsdk
 		
 		private var _modeSDK:int = MODESDK_IFLYTEK;							// 默认用训飞SDK 
 		
+		private var _buffAMR:ByteArray = null;								// 
+		
 		// getter client
 		public function get client():IMClient 
 		{
@@ -116,7 +118,7 @@ package nslm2.nets.imsdk
 				wavWrite.sampleBitRate = 16;       // 单点数据存储位数
 				wavWrite.samplingRate = 8000;
 				
-				wavWrite.processSamples(wav, sampleData, 16000, 1);
+				wavWrite.processSamples(wav, sampleData, 8000, 1);
 				
 				_recording_data.writeBytes(wav);
 				
@@ -179,7 +181,7 @@ package nslm2.nets.imsdk
 				_recog.addEventListener(MSCEvent.RECOG_COMPLETED, onComplete);
 			}
 			else if (_modeSDK == MODESDK_BAIDU) {
-				_record = new record(16, this, new MSCLog);
+				_record = new record(8, this, new MSCLog);
 			}
 			
 			chgState(STATE_INIT);
@@ -239,11 +241,24 @@ package nslm2.nets.imsdk
 				
 				trace("stopRecord MODESDK_BAIDU");
 				
-				var amrbuff:ByteArray = Codec.encode(_recording_data);
+				_buffAMR = Codec.encode(_recording_data);
 			}
 			
 			chgState(STATE_STOPRECORDING);
 		}
+		
+		public function getAMRData():ByteArray
+		{
+			return _buffAMR;
+		}
+		
+		public function getWAVData():ByteArray
+		{
+			//_record.getWAV();
+			var buf:ByteArray = procWav(_recording_data, 1, 8000);
+			return buf;
+		}
+		
 		// 播放url声音
 		public function playSound(url:String):void
 		{

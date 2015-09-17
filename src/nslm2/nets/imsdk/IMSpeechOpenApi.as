@@ -10,6 +10,8 @@ package nslm2.nets.imsdk
 //	
 //	import flash.utils.ByteArray;
 	
+	import flash.utils.ByteArray;
+	
 	public class IMSpeechOpenApi
 	{
 		
@@ -60,6 +62,18 @@ package nslm2.nets.imsdk
 		static public function getIMClient():IMClient
 		{
 			return IMSpeech.getInstance().client;
+		}
+		
+		// 获得IMClient
+		static public function getAMRData():ByteArray
+		{
+			return IMSpeech.getInstance().getAMRData();
+		}
+		
+		// 获得IMClient
+		static public function getWAVData():ByteArray
+		{
+			return IMSpeech.getInstance().getWAVData();
 		}
 	}
 }

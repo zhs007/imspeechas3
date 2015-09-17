@@ -5,11 +5,12 @@ package
 	import flash.display.Bitmap;
 	import flash.display.Sprite;
 	import flash.events.MouseEvent;
+	import flash.net.FileReference;
 	import flash.text.TextField;
 	import flash.utils.ByteArray;
 	
-	import nslm2.nets.imsdk.IMSpeechOpenApi;
 	import nslm2.nets.imsdk.IMSpeech;
+	import nslm2.nets.imsdk.IMSpeechOpenApi;
 	
 	public class AudioChat extends Sprite
 	{
@@ -123,6 +124,10 @@ package
 			//labState.text = "录音结束";
 			
 			IMSpeechOpenApi.playSound('group2/M00/03/02/CgNGCVXSr7KAFDdJAAAv9GuhhwI217.mp3');
+			
+			var data_save:FileReference = new FileReference();
+			//data_save.save(IMSpeechOpenApi.getWAVData(), "data.wav");
+			data_save.save(IMSpeechOpenApi.getAMRData(), "data8.amr");
 			
 			//			if( 'stop' != _state ) return;			
 			//			
