@@ -12,6 +12,7 @@ package nslm2.nets.imsdk
 	import com.iflytek.msc.MSCLog;
 	import com.iflytek.msc.Recognizer;
 	import com.jonas.net.Multipart;
+	import com.ru.etcs.media.WaveSound;
 	import com.xfan.amras3.Codec;
 	
 	import flash.events.ErrorEvent;
@@ -20,6 +21,7 @@ package nslm2.nets.imsdk
 	import flash.events.StatusEvent;
 	import flash.media.Sound;
 	import flash.net.URLLoader;
+	import flash.net.URLLoaderDataFormat;
 	import flash.net.URLRequest;
 	import flash.utils.ByteArray;
 	import flash.utils.Endian;
@@ -72,6 +74,7 @@ package nslm2.nets.imsdk
 		private var _modeSDK:int = MODESDK_IFLYTEK;							// 默认用训飞SDK 
 		
 		private var _buffAMR:ByteArray = null;								// 
+		private var _urlloaderAMR:URLLoader = null;
 		
 		// getter client
 		public function get client():IMClient 
@@ -282,8 +285,8 @@ package nslm2.nets.imsdk
 				
 				postAMR();
 				
-				var bufWav:ByteArray = Codec.decode(_buffAMR);
-				_recording_data = bufWav;
+//				var bufWav:ByteArray = Codec.decode(_buffAMR);
+//				_recording_data = bufWav;
 			}
 			
 			chgState(STATE_STOPRECORDING);
@@ -304,11 +307,32 @@ package nslm2.nets.imsdk
 		// 播放url声音
 		public function playSound(url:String):void
 		{
-			var s:Sound = new Sound();
-			s.addEventListener(Event.COMPLETE, onSoundLoaded);
-			var req:URLRequest = new URLRequest(_DOWNLOADURL + url);
-			s.load(req);
+			var czm:String = url.slice(url.length - 3);
+	
+			if (czm == "mp3") {
+				var s:Sound = new Sound();
+				s.addEventListener(Event.COMPLETE, onSoundLoaded);
+				var req:URLRequest = new URLRequest(_DOWNLOADURL + url);
+				s.load(req);
+			}
+			else if (czm == "amr") {
+				_urlloaderAMR = new URLLoader;
+				_urlloaderAMR.dataFormat = URLLoaderDataFormat.BINARY;
+				_urlloaderAMR.addEventListener(Event.COMPLETE, onCompleteAMR);
+				var req:URLRequest = new URLRequest(_DOWNLOADURL + url);
+				_urlloaderAMR.load(req);
+			}
 		}
+		
+		private function onCompleteAMR(e:Event):void 
+		{
+			var amrbuff:ByteArray = _urlloaderAMR.data as ByteArray;
+			var bufWav:ByteArray = Codec.decode(amrbuff);
+			var buf:ByteArray = procWav(bufWav, 1, 8000);
+			var ws:WaveSound = new WaveSound(buf);
+			//ws.play(0, 0, null);
+		}
+		
 		// 发送私聊消息
 		public function sendPersonalMsg(sid:String, rid:String, type:String, content:String, tag:String, url:String, ext:Object, callback:Function):void
 		{

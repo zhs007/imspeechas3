@@ -186,6 +186,8 @@ package com.ru.etcs.media {
 			__length = sound.length;
 			isLoaded = true;
 			dispatchEvent(new Event(Event.COMPLETE));
+			
+			play();
 		}
 		
 		/*
