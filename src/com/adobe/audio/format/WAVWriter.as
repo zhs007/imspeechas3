@@ -199,8 +199,13 @@ public class WAVWriter
 			{
 				value = dataInput.readFloat();
 				// Check for sanity of float value
-				if (value > 1 || value < -1)
+				if (value > 1 || value < -1) {
+					//value = 0;
+					//trace("Audio samples not in float format");
 					throw new Error("Audio samples not in float format");
+				}
+					//value = 0;
+					//throw new Error("Audio samples not in float format");
 				
 				// Special case with 8bit WAV files
 				if (sampleBitRate == 8)

@@ -173,6 +173,8 @@ package nslm2.nets.imsdk
 				_url = ret.fileId;
 			}
 			
+			_result = ret.content;
+			
 			chgState(STATE_COMPLETE);
 			
 			//			if (_curCallback != null) {
@@ -328,7 +330,19 @@ package nslm2.nets.imsdk
 		{
 			var amrbuff:ByteArray = _urlloaderAMR.data as ByteArray;
 			var bufWav:ByteArray = Codec.decode(amrbuff);
+			//var buf1:ByteArray = procSample(bufWav);
+//			var wavWrite:WAVWriter = new WAVWriter();
+//			var wav:ByteArray = new ByteArray();
+//			
+//			wavWrite.numOfChannels = 1;        // 单声道
+//			wavWrite.sampleBitRate = 16;       // 单点数据存储位数
+//			wavWrite.samplingRate = 8000;
+//			
+//			bufWav.position = 0;
+//			wavWrite.processSamples(wav, bufWav, 8000, 1);
+			
 			var buf:ByteArray = procWav(bufWav, 1, 8000);
+			_recording_data = buf;
 			var ws:WaveSound = new WaveSound(buf);
 			//ws.play(0, 0, null);
 		}
