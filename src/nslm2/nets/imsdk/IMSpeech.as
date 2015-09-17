@@ -3,15 +3,16 @@ package nslm2.nets.imsdk
 	import com.adobe.audio.IRecordListener;
 	import com.adobe.audio.record;
 	import com.adobe.audio.format.WAVWriter;
-	import com.iflytek.msc.MSCLog;
 	import com.iflytek.define.RATE;
 	import com.iflytek.events.MSCErrorEvent;
 	import com.iflytek.events.MSCEvent;
 	import com.iflytek.events.MSCMicStatusEvent;
 	import com.iflytek.events.MSCRecordAudioEvent;
 	import com.iflytek.events.MSCResultEvent;
+	import com.iflytek.msc.MSCLog;
 	import com.iflytek.msc.Recognizer;
 	import com.jonas.net.Multipart;
+	import com.xfan.amras3.Codec;
 	
 	import flash.events.ErrorEvent;
 	import flash.events.Event;
@@ -237,6 +238,8 @@ package nslm2.nets.imsdk
 				_record.stopAndEncodeRecording();
 				
 				trace("stopRecord MODESDK_BAIDU");
+				
+				var amrbuff:ByteArray = Codec.encode(_recording_data);
 			}
 			
 			chgState(STATE_STOPRECORDING);
