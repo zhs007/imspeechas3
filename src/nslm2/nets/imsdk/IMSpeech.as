@@ -114,7 +114,7 @@ package nslm2.nets.imsdk
 				
 				wavWrite.numOfChannels = 1;        // 单声道
 				wavWrite.sampleBitRate = 16;       // 单点数据存储位数
-				wavWrite.samplingRate = 16000;
+				wavWrite.samplingRate = 8000;
 				
 				wavWrite.processSamples(wav, sampleData, 16000, 1);
 				
