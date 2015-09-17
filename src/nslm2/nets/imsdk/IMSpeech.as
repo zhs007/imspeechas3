@@ -53,6 +53,7 @@ package nslm2.nets.imsdk
 		// 平台的配置
 		private static const _UPLOADURL:String = "http://imsdk.youzu.com/file/upload.json";
 		private static const _DOWNLOADURL:String = "http://imsdk.youzu.com/file/download?fileId=";
+		private static const _POSTAMRURL:String = "http://imsdk.youzu.com/file/uploadAndTrans.json";
 		
 		private var _recog:Recognizer = null;								// 讯飞的主实例
 		private var _curState:int = STATE_FREE;								// 当前状态
@@ -145,6 +146,37 @@ package nslm2.nets.imsdk
 			_modeSDK = mode;
 		}
 		
+		private function postAMR():void 
+		{	
+			var form:Multipart = new Multipart(_POSTAMRURL);
+			
+			form.addFile("file", _buffAMR, "application/octet-stream", "tmp.amr");
+			
+			var loader:URLLoader = new URLLoader();
+			loader.addEventListener(Event.COMPLETE, onPostAMRComplete);
+			loader.load(form.request);
+			
+			chgState(STATE_UPLOADING);
+		}
+		
+		private function onPostAMRComplete(evt:Event):void 
+		{
+			var loader:URLLoader = URLLoader(evt.target);
+			
+			//{"code":"00","desc":"成功","fileId":"group2/M00/03/02/CgNGCVXSr7KAFDdJAAAv9GuhhwI217.mp3"}
+			trace("completeHandler: " + loader.data);
+			var ret:Object = JSON.parse(loader.data);
+			if (ret.code == '00') {
+				_url = ret.fileId;
+			}
+			
+			chgState(STATE_COMPLETE);
+			
+			//			if (_curCallback != null) {
+			//				_curCallback(_mp3Encoder.mp3Data, _result);
+			//			}
+		}
+		
 		// 改变状态时调用
 		private function chgState(state:int):void
 		{
@@ -152,7 +184,12 @@ package nslm2.nets.imsdk
 			
 			if (_curCallback != null) {
 				if (_curState == STATE_COMPLETE) {
-					_curCallback(state, _mp3Encoder.mp3Data, _result, _url);
+					if (_modeSDK == MODESDK_IFLYTEK) {
+						_curCallback(state, _mp3Encoder.mp3Data, _result, _url);
+					}
+					else if (_modeSDK == MODESDK_BAIDU) {
+						_curCallback(state, _buffAMR, _result, _url);
+					}
 				}
 				else if (_curState == STATE_ENDIAT) {
 					_curCallback(state, _recording_data, _result, '');
@@ -242,6 +279,8 @@ package nslm2.nets.imsdk
 				trace("stopRecord MODESDK_BAIDU");
 				
 				_buffAMR = Codec.encode(_recording_data);
+				
+				postAMR();
 			}
 			
 			chgState(STATE_STOPRECORDING);
@@ -255,7 +294,7 @@ package nslm2.nets.imsdk
 		public function getWAVData():ByteArray
 		{
 			//_record.getWAV();
-			var buf:ByteArray = procWav(_recording_data, 1, 8000);
+			var buf:ByteArray = procWav(_recording_data, 2, 44100);
 			return buf;
 		}
 		
