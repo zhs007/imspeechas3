@@ -13,8 +13,9 @@ package nslm2.nets.imsdk
 	public class IMSpeechOpenApi
 	{
 		
-		static public function init(xfappid:String, xfhost:String, host:String, port:int):void
+		static public function init(sdkmode:int, xfappid:String, xfhost:String, host:String, port:int):void
 		{
+			IMSpeech.getInstance().setSDKMode(sdkmode);
 			IMSpeech.getInstance().init(xfappid, xfhost, host, port);
 		}
 		

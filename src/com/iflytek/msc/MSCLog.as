@@ -21,13 +21,13 @@
 		 * **********************************************************
 		 */
 		public function logDBG(info:String):void
-		{
-			var str:String = new String();
-			
+		{	
 			if(!output)
 			{
 				return;
 			}
+			
+			var str:String = new String();
 			
 			str = logCurTime();
 			str += "[VBS]";        // 日志等级

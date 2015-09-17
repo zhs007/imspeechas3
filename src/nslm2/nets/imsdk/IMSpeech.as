@@ -1,5 +1,9 @@
 package nslm2.nets.imsdk
 {
+	import com.adobe.audio.IRecordListener;
+	import com.adobe.audio.record;
+	import com.adobe.audio.format.WAVWriter;
+	import com.iflytek.msc.MSCLog;
 	import com.iflytek.define.RATE;
 	import com.iflytek.events.MSCErrorEvent;
 	import com.iflytek.events.MSCEvent;
@@ -12,6 +16,7 @@ package nslm2.nets.imsdk
 	import flash.events.ErrorEvent;
 	import flash.events.Event;
 	import flash.events.ProgressEvent;
+	import flash.events.StatusEvent;
 	import flash.media.Sound;
 	import flash.net.URLLoader;
 	import flash.net.URLRequest;
@@ -20,7 +25,7 @@ package nslm2.nets.imsdk
 	
 	import fr.kikko.lab.ShineMP3Encoder;
 
-	public class IMSpeech
+	public class IMSpeech implements IRecordListener
 	{
 		private static var _instance:IMSpeech = null;						// singleton 实例
 		private static var _allowInstantiation:Boolean = false;				// 因为 as3 没办法让构造函数私有
@@ -38,6 +43,9 @@ package nslm2.nets.imsdk
 		public static const STATE_MP3ERR:int = 9;							// mp3解码错误
 		public static const STATE_UPLOADERR:int = 10;						// 上传错误
 		
+		public static const MODESDK_IFLYTEK:int = 1;						// 训飞库
+		public static const MODESDK_BAIDU:int = 2;							// 百度库
+		
 		// 讯飞的配置
 		//private static const _XFCONFIG:String = "appid=55c055cd,timeout=2000";
 		
@@ -51,11 +59,15 @@ package nslm2.nets.imsdk
 		private var _result:String = '';									// 语音识别结果
 		private var _url:String = '';										// url
 		
+		private var _record:record = null;									// record
+		
 		private var _mp3Encoder:ShineMP3Encoder;							// mp3 encoder
 		
 		private var _curCallback:Function;									// 当前录音状态改变时调用
 		
 		private var _client:IMClient = new IMClient;						// socket client
+		
+		private var _modeSDK:int = MODESDK_IFLYTEK;							// 默认用训飞SDK 
 		
 		// getter client
 		public function get client():IMClient 
@@ -82,6 +94,54 @@ package nslm2.nets.imsdk
 				throw new Error("Error: Instantiation failed: Use IMSpeech.getInstance() instead of new.");
 			}
 		}
+		
+		// IRecordListener
+		public function recordStatus(e:StatusEvent):void
+		{
+			trace("recordStatus:" + e);
+		}
+		// IRecordListener
+		public function sampleDataProcess(sampleData:ByteArray, volume:int):void
+		{
+			trace("sampleDataProcess");
+			
+			if(sampleData.length > 0)
+			{
+				// 把64位音频转化为32位的
+				var wavWrite:WAVWriter = new WAVWriter();
+				var wav:ByteArray = new ByteArray();
+				
+				wavWrite.numOfChannels = 1;        // 单声道
+				wavWrite.sampleBitRate = 16;       // 单点数据存储位数
+				wavWrite.samplingRate = 16000;
+				
+				wavWrite.processSamples(wav, sampleData, 16000, 1);
+				
+				_recording_data.writeBytes(wav);
+				
+				wav.clear();
+			}
+		}
+		// IRecordListener
+		public function recordError(id:int, text:String):void
+		{
+			trace("onError " + id + " " + text);
+			
+			_recog.recogStop();
+			
+			chgState(STATE_IATERR);
+		}
+		
+		// 设置SDK模式，必须在初始化以前调用
+		public function setSDKMode(mode:int):void
+		{
+			if (_curState != STATE_FREE) {
+				throw new Error("Error: IMSpeech already init.");
+			}
+			
+			_modeSDK = mode;
+		}
+		
 		// 改变状态时调用
 		private function chgState(state:int):void
 		{
@@ -106,14 +166,20 @@ package nslm2.nets.imsdk
 			
 			_client.init(host, port);
 			
-			_recog = new Recognizer("appid=" + xfappid + ",timeout=2000", "dev.voicecloud.cn", 7);
 			_recording_data = new ByteArray;
 			
-			_recog.addEventListener(MSCMicStatusEvent.STATUS, onMicrophoneStatus);
-			_recog.addEventListener(MSCRecordAudioEvent.AUDIO_ARRIVED, onRecording);
-			_recog.addEventListener(MSCErrorEvent.ERROR, onError);
-			_recog.addEventListener(MSCResultEvent.RESULT_GET, onGettingResult);
-			_recog.addEventListener(MSCEvent.RECOG_COMPLETED, onComplete);
+			if (_modeSDK == MODESDK_IFLYTEK) {
+				_recog = new Recognizer("appid=" + xfappid + ",timeout=2000", "dev.voicecloud.cn", 7);
+				
+				_recog.addEventListener(MSCMicStatusEvent.STATUS, onMicrophoneStatus);
+				_recog.addEventListener(MSCRecordAudioEvent.AUDIO_ARRIVED, onRecording);
+				_recog.addEventListener(MSCErrorEvent.ERROR, onError);
+				_recog.addEventListener(MSCResultEvent.RESULT_GET, onGettingResult);
+				_recog.addEventListener(MSCEvent.RECOG_COMPLETED, onComplete);
+			}
+			else if (_modeSDK == MODESDK_BAIDU) {
+				_record = new record(16, this, new MSCLog);
+			}
 			
 			chgState(STATE_INIT);
 		}
@@ -122,6 +188,10 @@ package nslm2.nets.imsdk
 		{
 			if (_client != null) {
 				_client.disconnect();
+			}
+			
+			if (_record != null) {
+				_record = null;
 			}
 			
 			if (_recog != null) {
@@ -144,18 +214,30 @@ package nslm2.nets.imsdk
 			
 			_recording_data.clear();
 			
-			var strGrammar:String = "builtin:grammar/../search/location.abnf?language=zh-cn";
-			var grammar:ByteArray = new ByteArray();
-			grammar.writeMultiByte(strGrammar, "UTF-8" );
-			
-			_recog.recogStart( RATE.rate16k, grammar, "sub=iat, aue=speex;7, auf=audio/L16;rate=16000, ent=sms16k, rst=plain");
+			if (_modeSDK == MODESDK_IFLYTEK) {
+				var strGrammar:String = "builtin:grammar/../search/location.abnf?language=zh-cn";
+				var grammar:ByteArray = new ByteArray();
+				grammar.writeMultiByte(strGrammar, "UTF-8" );
+				
+				_recog.recogStart(RATE.rate16k, grammar, "sub=iat, aue=speex;7, auf=audio/L16;rate=16000, ent=sms16k, rst=plain");	
+			}
+			else if (_modeSDK == MODESDK_BAIDU) {
+				_record.startRecording();
+			}
 			
 			chgState(STATE_RECORDING);
 		}
 		// 停止录音
 		public function stopRecord():void
 		{
-			_recog.recordStop();
+			if (_modeSDK == MODESDK_IFLYTEK) {
+				_recog.recordStop();
+			}
+			else if (_modeSDK == MODESDK_BAIDU) {
+				_record.stopAndEncodeRecording();
+				
+				trace("stopRecord MODESDK_BAIDU");
+			}
 			
 			chgState(STATE_STOPRECORDING);
 		}

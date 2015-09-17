@@ -9,6 +9,7 @@ package
 	import nslm2.nets.imsdk.IMClient;
 	import nslm2.nets.imsdk.IMEvent;
 	import nslm2.nets.imsdk.IMSpeechOpenApi;
+	import nslm2.nets.imsdk.IMSpeech;
 	
 	public class imclientas3 extends Sprite
 	{
@@ -56,7 +57,7 @@ package
 			IMSpeechOpenApi.getIMClient().setMyUserInfo('s01', 'u1001' + i);
 			IMSpeechOpenApi.getIMClient().addChannel('s01', 'world', '123', 'rw', '001');
 			IMSpeechOpenApi.getIMClient().addChannel('s01', 'guid', '456', 'rw', '002');
-			IMSpeechOpenApi.init("55c055cd", "dev.voicecloud.cn", '10.1.1.149', 8999);
+			IMSpeechOpenApi.init(IMSpeech.MODESDK_BAIDU, "55c055cd", "dev.voicecloud.cn", '10.1.1.149', 8999);
 			//setInterval(onChannelChat, 500);
 		}
 		
