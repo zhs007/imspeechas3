@@ -21,16 +21,8 @@ package com.xfan.amras3
 			var buff:ByteArray = new ByteArray;
 			CModule.readBytes(destram, len, buff);
 			
-//			var buff:ByteArray = new ByteArray;
-//			var off:int = amras3_encode(src, buff);
-//			
-//			var buff1:ByteArray = new ByteArray;
-//			buff1.writeBytes(ram, off, 5);
-//			
-//			//var buff:ByteArray = new ByteArray;
-//			//trace(dest);
-//			//ram.position = dest;
-//			//buff.writeBytes(ram, dest, 5);
+			CModule.free(srcram);
+			CModule.free(destram);
 			
 			return buff;
 		}
@@ -50,16 +42,9 @@ package com.xfan.amras3
 			var buff:ByteArray = new ByteArray;
 			CModule.readBytes(destram, destlen, buff);
 			
-			//			var buff:ByteArray = new ByteArray;
-			//			var off:int = amras3_encode(src, buff);
-			//			
-			//			var buff1:ByteArray = new ByteArray;
-			//			buff1.writeBytes(ram, off, 5);
-			//			
-			//			//var buff:ByteArray = new ByteArray;
-			//			//trace(dest);
-			//			//ram.position = dest;
-			//			//buff.writeBytes(ram, dest, 5);
+			CModule.free(srcram);
+			CModule.free(destram);
+			CModule.free(valram);
 			
 			return buff;
 		}
