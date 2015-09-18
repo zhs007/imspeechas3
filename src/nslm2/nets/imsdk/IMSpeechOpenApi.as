@@ -64,19 +64,19 @@ package nslm2.nets.imsdk
 			return IMSpeech.getInstance().client;
 		}
 		
-		// 获得IMClient
+		// 获得AMRData
 		static public function getAMRData():ByteArray
 		{
 			return IMSpeech.getInstance().getAMRData();
 		}
 		
-		// 获得IMClient
+		// 获得WAVData
 		static public function getWAVData():ByteArray
 		{
 			return IMSpeech.getInstance().getWAVData();
 		}
 		
-		// 获得IMClient
+		// 获得MP3Data
 		static public function getMP3Data():ByteArray
 		{
 			return IMSpeech.getInstance().getMP3Data();
