@@ -129,7 +129,7 @@ package
 			//IMSpeechOpenApi.playSound('group2/M00/0D/CD/CgNGClX6vfaAZY-7AAAgJuS9V4c586.amr');
 			
 			var data_save:FileReference = new FileReference();
-			data_save.save(IMSpeechOpenApi.getWAVData(), "data.wav");
+			data_save.save(IMSpeechOpenApi.getMP3Data(), "data.mp3");
 			//data_save.save(IMSpeechOpenApi.getAMRData(), "data8.amr");
 			
 			//			if( 'stop' != _state ) return;			

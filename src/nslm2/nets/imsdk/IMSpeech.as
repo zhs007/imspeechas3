@@ -302,8 +302,15 @@ package nslm2.nets.imsdk
 		public function getWAVData():ByteArray
 		{
 			//_record.getWAV();
-			var buf:ByteArray = procWav(_recording_data, 1, 8000);
+			var buf:ByteArray = procWav(_recording_data, 2, 32000);
 			return buf;
+		}
+		
+		public function getMP3Data():ByteArray
+		{
+			//_record.getWAV();
+			//var buf:ByteArray = procWav(_recording_data, 2, 32000);
+			return _mp3Encoder.mp3Data;
 		}
 		
 		// 播放url声音
@@ -330,21 +337,54 @@ package nslm2.nets.imsdk
 		{
 			var amrbuff:ByteArray = _urlloaderAMR.data as ByteArray;
 			var bufWav:ByteArray = Codec.decode(amrbuff);
-			//var buf1:ByteArray = procSample(bufWav);
+			
+			var buf1:ByteArray = procSample8k(bufWav);
+//			var buf1:ByteArray = procSample2Float(bufWav, 16);
+//			
 //			var wavWrite:WAVWriter = new WAVWriter();
 //			var wav:ByteArray = new ByteArray();
 //			
-//			wavWrite.numOfChannels = 1;        // 单声道
+//			wavWrite.numOfChannels = 2;        // 单声道
 //			wavWrite.sampleBitRate = 16;       // 单点数据存储位数
 //			wavWrite.samplingRate = 8000;
 //			
-//			bufWav.position = 0;
-//			wavWrite.processSamples(wav, bufWav, 8000, 1);
+//			buf1.position = 0;
+//			wavWrite.processSamples(wav, buf1, 8000, 1);
+//			
+//			var buf2:ByteArray = procSample2NoFloat(wav, 16);
 			
-			var buf:ByteArray = procWav(bufWav, 1, 8000);
-			_recording_data = buf;
-			var ws:WaveSound = new WaveSound(buf);
+			var buf:ByteArray = procWav(buf1, 2, 32000);
+			_recording_data = buf1;
+			//var ws:WaveSound = new WaveSound(buf);
 			//ws.play(0, 0, null);
+			
+			buf.position = 0;
+			
+			_mp3Encoder = new ShineMP3Encoder(buf);
+			_mp3Encoder.addEventListener(Event.COMPLETE, onMP3EncodeCompleteAMR);
+			//_mp3Encoder.addEventListener(ProgressEvent.PROGRESS, onMP3EncodeProgress);
+			//_mp3Encoder.addEventListener(ErrorEvent.ERROR, onMP3EncodeError);
+			_mp3Encoder.start();
+			
+			//chgState(STATE_MP3ENCODEING);
+		}
+		
+		private function onMP3EncodeCompleteAMR(event:Event):void 
+		{	
+			var s:Sound = new Sound();
+			//s.addEventListener(Event.COMPLETE, onSoundLoaded);
+			_mp3Encoder.mp3Data.position = 0;
+			s.loadCompressedDataFromByteArray(_mp3Encoder.mp3Data, _mp3Encoder.mp3Data.length);
+			s.play();
+			//var form:Multipart = new Multipart(_UPLOADURL);
+			
+			//form.addFile("file", _mp3Encoder.mp3Data, "application/octet-stream", "tmp.mp3");
+//			
+//			var loader:URLLoader = new URLLoader();
+//			loader.addEventListener(Event.COMPLETE, onUploadComplete);
+//			loader.load(form.request);
+//			
+//			chgState(STATE_UPLOADING);
 		}
 		
 		// 发送私聊消息
@@ -401,7 +441,7 @@ package nslm2.nets.imsdk
 			
 			trace("onComplete");
 			
-			var wav32k:ByteArray = procSample(_recording_data);
+			var wav32k:ByteArray = procSample16k(_recording_data);
 			var wavbuff:ByteArray = procWav(wav32k, 2, 32000);
 			
 			wavbuff.position = 0;
@@ -466,7 +506,7 @@ package nslm2.nets.imsdk
 //			}
 		}
 		
-		private function procWav(buff:ByteArray, channel:int, rate:int):ByteArray
+		private function procWav(buff:ByteArray, channel:int, rate:int, nBitsPerSample:int = 16):ByteArray
 		{
 			buff.position = 0;
 			
@@ -484,9 +524,9 @@ package nslm2.nets.imsdk
 			wavbuf.writeShort(1); //nFormatTag
 			wavbuf.writeShort(channel); //nChannels
 			wavbuf.writeInt(rate); //nSamplesPerSec
-			wavbuf.writeInt(rate * channel * 2); //nAvgBytesPerSec
+			wavbuf.writeInt(rate * channel * Math.ceil(nBitsPerSample / 8)); //nAvgBytesPerSec
 			wavbuf.writeShort(2); //nBlockAlign
-			wavbuf.writeShort(16); //nBitsPerSample
+			wavbuf.writeShort(nBitsPerSample); //nBitsPerSample
 			
 			wavbuf.writeUTFBytes("data");
 			wavbuf.writeInt(4 + 8 + 8 + 16 + 12 + buff.length - 44);
@@ -496,7 +536,48 @@ package nslm2.nets.imsdk
 			return wavbuf;
 		}
 		
-		private function procSample(src:ByteArray) : ByteArray 
+		private function procSample2Float(src:ByteArray, bps:int) : ByteArray
+		{
+			src.position = 0;
+			var buff:ByteArray = new ByteArray;
+			buff.endian = src.endian;
+			
+			var sampleSize:int = Math.ceil(bps / 8);
+			if (sampleSize == 0) throw "Unsupported BPS";
+			var divisor:int = 1 << (bps-1);
+			var shift:int = 1 << bps;
+			
+			for (var i:int = 0; i < src.length / 2; ++i) {
+				var s:int = src.readShort();
+				if (s > divisor) s -= shift;
+				
+				buff.writeFloat(s / divisor);
+			}
+			
+			return buff;
+		}
+		
+		private function procSample2NoFloat(src:ByteArray, bps:int) : ByteArray
+		{
+			src.position = 0;
+			var buff:ByteArray = new ByteArray;
+			buff.endian = src.endian;
+			
+			var sampleSize:int = Math.ceil(bps / 8);
+			if (sampleSize == 0) throw "Unsupported BPS";
+			var divisor:int = 1 << (bps-1);
+			var shift:int = 1 << bps;
+			
+			for (var i:int = 0; i < src.length / 4; ++i) {
+				var f:Number = src.readShort();
+				var s:int = Math.ceil(f * divisor);
+				buff.writeShort(s);
+			}
+			
+			return buff;
+		}
+		
+		private function procSample16k(src:ByteArray) : ByteArray 
 		{
 			src.position = 0;
 			
@@ -511,6 +592,12 @@ package nslm2.nets.imsdk
 				if (i == 0) {
 					cur = src.readShort();
 					last = src.readShort();
+					
+					buff.writeShort(cur);
+					buff.writeShort(cur);
+					
+					buff.writeShort(cur);
+					buff.writeShort(cur);
 				}
 				else {
 					cur = last;
@@ -521,6 +608,57 @@ package nslm2.nets.imsdk
 				buff.writeShort(cur);
 				
 				//var dat:int = (cur + last) / 2;
+				
+				buff.writeShort(cur);
+				buff.writeShort(cur);
+			}
+			
+			return buff;
+		}
+		
+		private function procSample8k(src:ByteArray) : ByteArray 
+		{
+			src.position = 0;
+			
+			var buff:ByteArray = new ByteArray;
+			buff.endian = src.endian;
+			
+			src.position = 0;
+			var srclen:int = src.length / 2;
+			var last:int = 0;
+			var cur:int = 0;
+			for (var i:int = 0; i < srclen - 1; ++i) {
+				if (i == 0) {
+					cur = src.readShort();
+					last = src.readShort();
+					
+					buff.writeShort(cur);
+					buff.writeShort(cur);
+					
+					buff.writeShort(cur);
+					buff.writeShort(cur);
+					
+					buff.writeShort(cur);
+					buff.writeShort(cur);
+					
+					buff.writeShort(cur);
+					buff.writeShort(cur);
+				}
+				else {
+					cur = last;
+					last = src.readShort();
+				}
+				
+				buff.writeShort(cur);
+				buff.writeShort(cur);
+				
+				//var dat:int = (cur + last) / 2;
+				
+				buff.writeShort(cur);
+				buff.writeShort(cur);
+				
+				buff.writeShort(cur);
+				buff.writeShort(cur);
 				
 				buff.writeShort(cur);
 				buff.writeShort(cur);

@@ -75,5 +75,11 @@ package nslm2.nets.imsdk
 		{
 			return IMSpeech.getInstance().getWAVData();
 		}
+		
+		// 获得IMClient
+		static public function getMP3Data():ByteArray
+		{
+			return IMSpeech.getInstance().getMP3Data();
+		}
 	}
 }
