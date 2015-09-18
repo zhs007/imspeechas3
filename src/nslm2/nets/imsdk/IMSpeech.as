@@ -12,7 +12,6 @@ package nslm2.nets.imsdk
 	import com.iflytek.msc.MSCLog;
 	import com.iflytek.msc.Recognizer;
 	import com.jonas.net.Multipart;
-	import com.ru.etcs.media.WaveSound;
 	import com.xfan.amras3.Codec;
 	
 	import flash.events.ErrorEvent;
@@ -176,10 +175,6 @@ package nslm2.nets.imsdk
 			_result = ret.content;
 			
 			chgState(STATE_COMPLETE);
-			
-			//			if (_curCallback != null) {
-			//				_curCallback(_mp3Encoder.mp3Data, _result);
-			//			}
 		}
 		
 		// 改变状态时调用
@@ -286,9 +281,6 @@ package nslm2.nets.imsdk
 				_buffAMR = Codec.encode(_recording_data);
 				
 				postAMR();
-				
-//				var bufWav:ByteArray = Codec.decode(_buffAMR);
-//				_recording_data = bufWav;
 			}
 			
 			chgState(STATE_STOPRECORDING);
@@ -301,15 +293,12 @@ package nslm2.nets.imsdk
 		
 		public function getWAVData():ByteArray
 		{
-			//_record.getWAV();
 			var buf:ByteArray = procWav(_recording_data, 2, 32000);
 			return buf;
 		}
 		
 		public function getMP3Data():ByteArray
 		{
-			//_record.getWAV();
-			//var buf:ByteArray = procWav(_recording_data, 2, 32000);
 			return _mp3Encoder.mp3Data;
 		}
 		
@@ -328,8 +317,8 @@ package nslm2.nets.imsdk
 				_urlloaderAMR = new URLLoader;
 				_urlloaderAMR.dataFormat = URLLoaderDataFormat.BINARY;
 				_urlloaderAMR.addEventListener(Event.COMPLETE, onCompleteAMR);
-				var req:URLRequest = new URLRequest(_DOWNLOADURL + url);
-				_urlloaderAMR.load(req);
+				var req1:URLRequest = new URLRequest(_DOWNLOADURL + url);
+				_urlloaderAMR.load(req1);
 			}
 		}
 		
@@ -339,52 +328,21 @@ package nslm2.nets.imsdk
 			var bufWav:ByteArray = Codec.decode(amrbuff);
 			
 			var buf1:ByteArray = procSample8k(bufWav);
-//			var buf1:ByteArray = procSample2Float(bufWav, 16);
-//			
-//			var wavWrite:WAVWriter = new WAVWriter();
-//			var wav:ByteArray = new ByteArray();
-//			
-//			wavWrite.numOfChannels = 2;        // 单声道
-//			wavWrite.sampleBitRate = 16;       // 单点数据存储位数
-//			wavWrite.samplingRate = 8000;
-//			
-//			buf1.position = 0;
-//			wavWrite.processSamples(wav, buf1, 8000, 1);
-//			
-//			var buf2:ByteArray = procSample2NoFloat(wav, 16);
-			
 			var buf:ByteArray = procWav(buf1, 2, 32000);
-			_recording_data = buf1;
-			//var ws:WaveSound = new WaveSound(buf);
-			//ws.play(0, 0, null);
-			
+			//_recording_data = buf1;
+	
 			buf.position = 0;
-			
 			_mp3Encoder = new ShineMP3Encoder(buf);
 			_mp3Encoder.addEventListener(Event.COMPLETE, onMP3EncodeCompleteAMR);
-			//_mp3Encoder.addEventListener(ProgressEvent.PROGRESS, onMP3EncodeProgress);
-			//_mp3Encoder.addEventListener(ErrorEvent.ERROR, onMP3EncodeError);
 			_mp3Encoder.start();
-			
-			//chgState(STATE_MP3ENCODEING);
 		}
 		
 		private function onMP3EncodeCompleteAMR(event:Event):void 
 		{	
 			var s:Sound = new Sound();
-			//s.addEventListener(Event.COMPLETE, onSoundLoaded);
 			_mp3Encoder.mp3Data.position = 0;
 			s.loadCompressedDataFromByteArray(_mp3Encoder.mp3Data, _mp3Encoder.mp3Data.length);
 			s.play();
-			//var form:Multipart = new Multipart(_UPLOADURL);
-			
-			//form.addFile("file", _mp3Encoder.mp3Data, "application/octet-stream", "tmp.mp3");
-//			
-//			var loader:URLLoader = new URLLoader();
-//			loader.addEventListener(Event.COMPLETE, onUploadComplete);
-//			loader.load(form.request);
-//			
-//			chgState(STATE_UPLOADING);
 		}
 		
 		// 发送私聊消息
